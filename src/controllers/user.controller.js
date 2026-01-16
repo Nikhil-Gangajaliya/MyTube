@@ -3,7 +3,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { json } from "express";
+import { log } from "console";
+
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
@@ -17,8 +18,8 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res
 
     const { fullName, email, username, password } = req.body;
-    console.log("Email : ", email);
-    console.log("User Name : ", username);
+    // console.log("Email : ", email);
+    // console.log("User Name : ", username);
 
     if (
         [fullName, email, username, password].some((fields) =>
@@ -35,8 +36,17 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with username or email already exists");
     }
 
+    console.log(req.files);
+    
+
     const avatarLocalPath = req.files?.avatar?.[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files .coverImage[0].path       
+    }
+
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required");
