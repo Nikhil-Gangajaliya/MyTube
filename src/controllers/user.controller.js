@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
@@ -56,7 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // console.log(req.files);
 
 
-    let avatarLocalPath  = req.files?.avatar?.[0]?.path;
+    let avatarLocalPath = req.files?.avatar?.[0]?.path;
     // const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
     let coverImageLocalPath;
@@ -275,7 +275,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -310,14 +310,20 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Error while uploading on avatar")
     }
 
+    const existingUser = await User.findById(req.user?._id);
+
+    if (existingUser?.avatar) {
+        await deleteFromCloudinary(existingUser.avatar);
+    }
+
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
-            $set:{
+            $set: {
                 avatar: avatar.url
             }
         },
-        {new: true}
+        { new: true }
     ).select("-password")
 
     return res
@@ -344,14 +350,20 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Error while uploading on cover image")
     }
 
+    const existingUser = await User.findById(req.user?._id);
+    
+    if (existingUser?.coverImage) {
+        await deleteFromCloudinary(existingUser.coverImage);
+    }
+
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
-            $set:{
+            $set: {
                 coverImage: coverImage.url
             }
         },
-        {new: true}
+        { new: true }
     ).select("-password")
 
     return res
